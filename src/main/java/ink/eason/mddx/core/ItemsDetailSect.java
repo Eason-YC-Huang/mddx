@@ -81,7 +81,7 @@ public class ItemsDetailSect {
             this.encoding = encoding;
         }
 
-        public String loadAndFindItemDetail(File file, long detailOffset) throws Exception {
+        public String loadAndFindItemDetail(File file, boolean isMddFile, long detailOffset) throws Exception {
 
             try (RandomAccessFile f = new RandomAccessFile(file, "r");
                  FileChannel channel = f.getChannel()) {
@@ -99,7 +99,12 @@ public class ItemsDetailSect {
                     long idx = detailOffset - itemDetailStartOffset;
                     content.position((int) idx);
 
-                    return BF.readText(content,encoding);
+                    if (isMddFile) {
+                        // Don't know to split the data in ItemsDetailSect for MDD file
+                        return encoding.decode(content).toString();
+                    }
+
+                    return BF.readText(content, encoding);
                 }
             }
 

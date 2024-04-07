@@ -23,6 +23,7 @@ public class ItemsSect {
 
     private final Charset encoding;
     private final int step;
+    private final boolean isMddFile;
 
     private final long numOfItemBlocks;
     private final long numOfItems;
@@ -34,10 +35,11 @@ public class ItemsSect {
 
     private final List<ItemsBlock> itemsBlocks;
 
-    public ItemsSect(ByteBuffer dataBuffer, Charset encoding) {
+    public ItemsSect(ByteBuffer dataBuffer, Charset encoding, boolean isMddFile) {
 
         this.encoding = encoding;
         this.step = BF.step(encoding);
+        this.isMddFile = isMddFile;
 
         {
             ByteBuffer buffer = sliceAndMove(dataBuffer, 40);
@@ -79,8 +81,7 @@ public class ItemsSect {
         }
 
         {
-            for (int i = 0, itemsBlocksSize = itemsBlocks.size(); i < itemsBlocksSize; i++) {
-                ItemsBlock itemsBlock = itemsBlocks.get(i);
+            for (ItemsBlock itemsBlock : itemsBlocks) {
                 itemsBlock.offset = dataBuffer.position();
                 ByteBuffer content = sliceAndMove(dataBuffer, (int) itemsBlock.itemBlockLen);
                 content = Codec.Decompress.of(content)
@@ -102,7 +103,8 @@ public class ItemsSect {
 
     public Long findItemDetailOffset(String item) {
         for (ItemsBlock block : itemsBlocks) {
-            if (block.firstItem.compareTo(item.toLowerCase()) <= 0 && block.lastItem.compareTo(item.toLowerCase()) >= 0) {
+            if (block.firstItem.compareTo(item.toLowerCase()) <= 0
+                    && ((isMddFile) ? block.lastItem.compareTo(item.toLowerCase()) > 0 : block.lastItem.compareTo(item.toLowerCase()) >= 0)) {
                 return block.findItemDetailOffset(item);
             }
         }
