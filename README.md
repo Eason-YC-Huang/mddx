@@ -14,3 +14,5 @@ mvn install
 java -jar ./target/mddx-1.0-SNAPSHOT.jar
 ```
 
+Open browser and type `localhost:8080/search/hello` to search `hello` word.
+
