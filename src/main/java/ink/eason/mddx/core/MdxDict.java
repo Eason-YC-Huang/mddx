@@ -16,8 +16,8 @@ public class MdxDict {
         try {
             ByteBuffer dataBuffer = ByteBuffer.wrap(Files.readAllBytes(dict.toPath()));
             this.headerSect = new HeaderSect(dataBuffer);
-            this.itemsSect = new ItemsSect(dataBuffer);
-            this.itemsDetailSect = new ItemsDetailSect(dataBuffer);
+            this.itemsSect = new ItemsSect(dataBuffer, this.headerSect.getEncoding());
+            this.itemsDetailSect = new ItemsDetailSect(dataBuffer, this.headerSect.getEncoding());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -45,8 +45,9 @@ public class MdxDict {
     }
 
     public static void main(String[] args) {
-        MdxDict mdxDict = new MdxDict(new File("/Users/hyc/Documents/Dictionary/LDOCE5++ V 2-15.mdd"));
-        System.out.println(mdxDict.search("LM5style.css"));
+        MdxDict mdxDict = new MdxDict(new File("/Users/hyc/Documents/Dictionary/LDOCE5++ V 2-15.mdx"));
+        System.out.println(mdxDict.search("key"));
+//        System.out.println(mdxDict.itemsSect.findItemDetailOffset("\\LM5style.css"));
     }
 
 

@@ -2,25 +2,25 @@ package ink.eason.mddx.core;
 
 import ink.eason.mddx.utils.BF;
 import ink.eason.mddx.utils.Codec;
-import ink.eason.mddx.utils.Pair;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.util.*;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @EqualsAndHashCode
 @ToString
 public class ItemsDetailSect {
+
+    private final Charset encoding;
 
     private final long numOfItemDetailBlocks;
     private final long numOfItemDetails;
@@ -28,7 +28,9 @@ public class ItemsDetailSect {
     private final long itemDetailBlocksLen;
     private final List<ItemsDetailBlock> itemsDetailBlockList;
 
-    public ItemsDetailSect(ByteBuffer dataBuffer) {
+    public ItemsDetailSect(ByteBuffer dataBuffer, Charset encoding) {
+        this.encoding = encoding;
+
         this.numOfItemDetailBlocks = dataBuffer.getLong();
         this.numOfItemDetails = dataBuffer.getLong();
         this.itemDetailBlocksMetaLen = dataBuffer.getLong();
@@ -42,7 +44,7 @@ public class ItemsDetailSect {
             long offset = 0;
 
             while (buffer.hasRemaining()) {
-                ItemsDetailBlock itemsDetailBlock = new ItemsDetailBlock();
+                ItemsDetailBlock itemsDetailBlock = new ItemsDetailBlock(encoding);
                 itemsDetailBlock.fileOffset = fileOffset;
                 itemsDetailBlock.itemBlockLen = buffer.getLong();
                 itemsDetailBlock.decompressedLen = buffer.getLong();
@@ -73,6 +75,11 @@ public class ItemsDetailSect {
         private long decompressedLen;
         private long itemDetailStartOffset;
         private long itemDetailEndOffset;
+        private final Charset encoding;
+
+        public ItemsDetailBlock(Charset encoding) {
+            this.encoding = encoding;
+        }
 
         public String loadAndFindItemDetail(File file, long detailOffset) throws Exception {
 
@@ -92,7 +99,7 @@ public class ItemsDetailSect {
                     long idx = detailOffset - itemDetailStartOffset;
                     content.position((int) idx);
 
-                    return BF.readUtf8(content);
+                    return BF.readText(content,encoding);
                 }
             }
 

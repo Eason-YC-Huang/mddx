@@ -9,15 +9,20 @@ import lombok.Getter;
 import lombok.ToString;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+import static ink.eason.mddx.utils.BF.readText;
 import static ink.eason.mddx.utils.BF.sliceAndMove;
 
 @Getter
 @ToString
 @EqualsAndHashCode
 public class ItemsSect {
+
+    private final Charset encoding;
+    private final int step;
 
     private final long numOfItemBlocks;
     private final long numOfItems;
@@ -29,7 +34,10 @@ public class ItemsSect {
 
     private final List<ItemsBlock> itemsBlocks;
 
-    public ItemsSect(ByteBuffer dataBuffer) {
+    public ItemsSect(ByteBuffer dataBuffer, Charset encoding) {
+
+        this.encoding = encoding;
+        this.step = BF.step(encoding);
 
         {
             ByteBuffer buffer = sliceAndMove(dataBuffer, 40);
@@ -59,11 +67,11 @@ public class ItemsSect {
                 ItemsBlock itemsBlock = new ItemsBlock();
                 itemsBlock.totalItems = content.getLong();
                 short firstValLen = content.getShort();
-                itemsBlock.firstItem = StandardCharsets.UTF_8.decode(sliceAndMove(content, firstValLen)).toString();
-                content.get();//skip null
+                itemsBlock.firstItem = encoding.decode(sliceAndMove(content, firstValLen * step)).toString();
+                BF.move(content, step);
                 short lastValLen = content.getShort();
-                itemsBlock.lastItem = StandardCharsets.UTF_8.decode(sliceAndMove(content, lastValLen)).toString();
-                content.get();//skip null
+                itemsBlock.lastItem = encoding.decode(sliceAndMove(content, lastValLen * step)).toString();
+                BF.move(content, step);
                 itemsBlock.itemBlockLen = content.getLong();
                 itemsBlock.decompressedLen = content.getLong();
                 itemsBlocks.add(itemsBlock);
@@ -82,7 +90,7 @@ public class ItemsSect {
                 Map<String, Long> mapping = new LinkedHashMap<>();
                 while (content.hasRemaining()) {
                     long itemDetailOffset = content.getLong();
-                    String item = BF.readUtf8(content);
+                    String item = BF.readText(content, encoding);
                     // why we have duplicated items here?
                     mapping.putIfAbsent(item, itemDetailOffset);
                 }
@@ -94,7 +102,7 @@ public class ItemsSect {
 
     public Long findItemDetailOffset(String item) {
         for (ItemsBlock block : itemsBlocks) {
-            if (block.firstItem.compareTo(item) <= 0 && block.lastItem.compareTo(item) >= 0) {
+            if (block.firstItem.compareTo(item.toLowerCase()) <= 0 && block.lastItem.compareTo(item.toLowerCase()) >= 0) {
                 return block.findItemDetailOffset(item);
             }
         }
